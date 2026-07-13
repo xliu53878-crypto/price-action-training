@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+*.swp
+Thumbs.db
+
+# local data cache / fetched raw dumps
+*.log
+venv/
+__pycache__/
+
+# workbuddy project memory (not part of the deliverable)
+.workbuddy/
+
+# keep the data folder, but the generated dataset is large & reproducible
+data/market_data.js
+vendor/
