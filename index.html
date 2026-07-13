@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trading Gym · Price Action 认知训练</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">Trading Gym<small>Price Action 认知训练</small></div>
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <div id="levelBadge" class="badge">等级：青铜</div>
+      <div class="note" id="persistNote"></div>
+    </div>
+  </aside>
+
+  <main id="main"></main>
+</div>
+
+<div id="modal"><div class="box" id="modalBox"></div></div>
+
+<script src="data/market_data.js"></script>
+<script src="core.js"></script>
+<script src="m1_blind.js"></script>
+<script src="m2_breakout.js"></script>
+<script src="m3_pa.js"></script>
+<script src="m4_market.js"></script>
+<script src="m5_sector.js"></script>
+<script src="m6_position.js"></script>
+<script src="m7_risk.js"></script>
+<script src="m8_center.js"></script>
+<script>window.addEventListener("DOMContentLoaded", function(){ document.getElementById("persistNote").textContent = TG.persistNote(); TG.start(); });</script>
+</body>
+</html>
