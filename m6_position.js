@@ -5,9 +5,9 @@
   const M = { cur: null };
 
   function genCase() {
-    const stop = [3, 4, 5, 7, 10][Math.floor(Math.random() * 5)];
-    const target = [8, 10, 15, 20, 25][Math.floor(Math.random() * 5)];
-    const winrate = [40, 45, 50, 55, 60, 65][Math.floor(Math.random() * 6)];
+    const stop = [2, 3, 4, 5, 6, 8, 10, 12][Math.floor(Math.random() * 8)];
+    const target = [5, 8, 10, 12, 15, 18, 20, 25, 30][Math.floor(Math.random() * 9)];
+    const winrate = [35, 40, 45, 50, 55, 60, 65, 70][Math.floor(Math.random() * 8)];
     const exp = winrate * target - (100 - winrate) * stop; // 每100元风险对应的期望收益（元）
     const optimal = TG.clamp(2 / stop * 100, 1, 100); // 单笔风险2% → 仓位%
     return { capital: 1000000, stop, target, winrate, exp, shouldTrade: exp > 0, optimal };
