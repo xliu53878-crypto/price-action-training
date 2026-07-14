@@ -46,7 +46,8 @@
 
   function render(container) {
     if (window.__TG_TEST_MODE__) (window.__TG_TEST__ = window.__TG_TEST__ || {})["sector"] = M;
-    if (!TG._marketDateMap) { container.innerHTML = '<div class="empty">请先打开「市场结构训练」以构建日期索引。</div>'; return; }
+    if (!TG._marketDateMap) { if (TG.buildMarket) TG.buildMarket(); }
+    if (!TG._marketDateMap) { container.innerHTML = '<div class="empty">样本不足，无法构建日期索引。</div>'; return; }
     let p, s = null;
     for (let tries = 0; tries < 30; tries++) {
       p = 5 + Math.floor(Math.random() * (TG._marketDates.length - 12));
