@@ -7,6 +7,7 @@
   const CANDLE_OPTS = ["Pin Bar", "Inside Bar", "Outside Bar", "吞没结构", "假突破", "无明确结构"];
   const VOL_OPTS = ["上涨放量", "下跌缩量", "放量滞涨", "缩量上涨", "天量换手", "地量企稳"];
   const TREND_OPTS = ["上升趋势", "下降趋势", "箱体整理", "趋势衰竭", "趋势反转"];
+  const PATTERN_OPTS = ["双顶", "双底", "头肩顶", "头肩底", "三角形整理", "无明确形态"];
 
   const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
   const regSlope = (a) => {
@@ -62,6 +63,40 @@
     return "箱体整理";
   }
 
+  function classifyPattern(k, i) {
+    const a = Math.max(2, i - 44), b = i;
+    const hs = [], ls = [];
+    for (let t = 1; t < b - a; t++) {
+      const idx = a + t;
+      if (k[idx].h >= k[idx - 1].h && k[idx].h >= k[idx + 1].h) hs.push({ idx, p: k[idx].h });
+      if (k[idx].l <= k[idx - 1].l && k[idx].l <= k[idx + 1].l) ls.push({ idx, p: k[idx].l });
+    }
+    const cur = k[i].c;
+    if (hs.length >= 2) {
+      const l2 = hs.slice(-2);
+      if (Math.abs(l2[0].p - l2[1].p) / l2[0].p < 0.04 && cur < Math.min(l2[0].p, l2[1].p) * 0.99) return "双顶";
+    }
+    if (ls.length >= 2) {
+      const l2 = ls.slice(-2);
+      if (Math.abs(l2[0].p - l2[1].p) / l2[0].p < 0.04 && cur > Math.max(l2[0].p, l2[1].p) * 1.01) return "双底";
+    }
+    if (hs.length >= 3) {
+      const t3 = hs.slice(-3), mid = t3[1];
+      const sym = (Math.abs(t3[0].p - mid.p) + Math.abs(t3[2].p - mid.p)) / (t3[0].p + t3[2].p) < 0.08;
+      if (mid.p > t3[0].p && mid.p > t3[2].p && cur < Math.min(t3[0].p, t3[2].p) * 0.99 && sym) return "头肩顶";
+    }
+    if (ls.length >= 3) {
+      const t3 = ls.slice(-3), mid = t3[1];
+      const sym = (Math.abs(t3[0].p - mid.p) + Math.abs(t3[2].p - mid.p)) / (t3[0].p + t3[2].p) < 0.08;
+      if (mid.p < t3[0].p && mid.p < t3[2].p && cur > Math.max(t3[0].p, t3[2].p) * 1.01 && sym) return "头肩底";
+    }
+    if (hs.length >= 2 && ls.length >= 2) {
+      const hS = regSlope(hs.map((x) => x.p)), lS = regSlope(ls.map((x) => x.p));
+      if (hS < 0 && lS > 0) return "三角形整理";
+    }
+    return "无明确形态";
+  }
+
   function genQuiz(type) {
     const stocks = Object.values(window.MARKET_DATA);
     const s = stocks[Math.floor(Math.random() * stocks.length)];
@@ -77,11 +112,16 @@
       viewStart = i - 9; revealEnd = i + 5; opts = VOL_OPTS;
       answer = classifyVol(k, i);
       explain = `量价实际为「${answer}」。成交结构是资金行为的直接映射，比价格更诚实。`;
-    } else {
+    } else if (type === "trend") {
       i = 45 + Math.floor(Math.random() * (L - 60));
       viewStart = i - 39; revealEnd = i + 10; opts = TREND_OPTS;
       answer = classifyTrend(k, i);
       explain = `结构实际为「${answer}」。趋势是你的朋友，直到它反转——识别衰竭与反转是逃顶抄底的关键。`;
+    } else {
+      i = 50 + Math.floor(Math.random() * (L - 70));
+      viewStart = i - 44; revealEnd = i + 10; opts = PATTERN_OPTS;
+      answer = classifyPattern(k, i);
+      explain = `组合形态实际为「${answer}」。经典形态是情绪的几何化——双顶/头肩是派发，双底/三角形是蓄势，识别它们能提前感知拐点。`;
     }
     return { s, k, i, viewStart, revealEnd, opts, answer, explain, type };
   }
@@ -93,6 +133,7 @@
         <button class="btn pa-tab ${M.type === "candle" ? "btn-primary" : ""}" data-t="candle">K线结构</button>
         <button class="btn pa-tab ${M.type === "vol" ? "btn-primary" : ""}" data-t="vol">成交结构</button>
         <button class="btn pa-tab ${M.type === "trend" ? "btn-primary" : ""}" data-t="trend">趋势结构</button>
+        <button class="btn pa-tab ${M.type === "pattern" ? "btn-primary" : ""}" data-t="pattern">组合形态</button>
       </div>
       <div class="scenario" id="m3hint"></div>
       <div class="chart-wrap"><canvas id="m3chart"></canvas><div class="lockBanner" id="m3lock">🔒 未来数据已隐藏</div></div>
@@ -106,13 +147,16 @@
     const $ = (id) => container.querySelector("#" + id);
     container.querySelectorAll(".pa-tab").forEach((b) => b.onclick = () => { M.type = b.dataset.t; render(container); });
     loadQuiz(container);
+    // 提交/下一题必须在每次 render 时绑定（切标签会重建按钮元素，否则点击无反应）
+    $("m3submit").onclick = () => submit(container);
+    $("m3next").onclick = () => loadQuiz(container);
   }
 
   function loadQuiz(container) {
     const $ = (id) => container.querySelector("#" + id);
     M.q = genQuiz(M.type); M.revealed = false;
     const q = M.q;
-    const hint = { candle: "观察最后一根（箭头处）的实体与影线，判断其 K 线结构。", vol: "下图含成交量（底部），判断当前量价关系。", trend: "观察约40根的整体走向，判断当前趋势结构。" }[q.type];
+    const hint = { candle: "观察最后一根（箭头处）的实体与影线，判断其 K 线结构。", vol: "下图含成交量（底部），判断当前量价关系。", trend: "观察约40根的整体走向，判断当前趋势结构。", pattern: "观察箭头之前的整体轮廓，判断是双顶/双底/头肩/三角形等组合形态。" }[q.type];
     $("m3hint").textContent = hint;
     $("m3opts").innerHTML = q.opts.map((o) => `<div class="opt" data-o="${o}">${o}</div>`).join("");
     $("m3opts").querySelectorAll(".opt").forEach((el) => el.onclick = () => {
@@ -199,13 +243,8 @@
 
   TG.register({
     id: "pa", title: "Price Action 训练", icon: "🕯️",
-    desc: "K线结构 / 成交结构 / 趋势结构识别——建立对价格与资金行为的直接认知。",
-    render(container) {
-      const $c = (id) => container.querySelector("#" + id);
-      render(container);
-      container.querySelector("#m3submit").onclick = () => submit(container);
-      container.querySelector("#m3next").onclick = () => loadQuiz(container);
-    },
+    desc: "K线结构 / 成交结构 / 趋势结构 / 组合形态识别——建立对价格与资金行为的直接认知。",
+    render,
   });
   TG.addNav("pa");
 })();
