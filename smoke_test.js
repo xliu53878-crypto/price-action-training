@@ -83,7 +83,15 @@ try {
   TG.navOrder.forEach((id) => { TG.nav(id); });
   console.log("全部模块 render OK");
 
-  // 各模块 submit（验证不抛异常 + 跑通评分路径）
+  // m3 重新渲染（模拟切换 K线/成交/趋势/形态 标签）后，submit/next 必须仍绑定，否则点击无反应
+  TG.nav("pa");
+  TG.modules.pa.render(getEl("main"));
+  const paSub = getEl("main").querySelector("#m3submit"), paNext = getEl("main").querySelector("#m3next");
+  if (!paSub || !paSub.onclick) throw new Error("m3 重新渲染后 m3submit 未绑定（切标签将失效）");
+  if (!paNext || !paNext.onclick) throw new Error("m3 重新渲染后 m3next 未绑定（切标签将失效）");
+  console.log("m3 标签切换后处理器保持 OK");
+
+  // 各模块 submit（验证不抛异常 + 跑通评分路径 + 处理器已绑定）
   function correctPick(id) {
     const T = global.window.__TG_TEST__ && global.window.__TG_TEST__[id];
     if (!T) return;
@@ -99,7 +107,8 @@ try {
     TG.nav(id);
     correctPick(id);
     const sub = getEl("main").querySelector(submitSelFor(id));
-    if (sub && sub.onclick) sub.onclick();
+    if (!sub || !sub.onclick) throw new Error("模块 " + id + " 未绑定 submit 处理器（将‘未响应’）");
+    sub.onclick();
   });
   console.log("各模块 submit（含评分路径） OK");
 
