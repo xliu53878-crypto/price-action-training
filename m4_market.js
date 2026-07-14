@@ -121,6 +121,7 @@
       <div class="note2" style="margin-top:8px">证据：${ev}。情绪周期识别的核心是先分类、再匹配策略——高潮期不追高，退潮期控仓位。</div>`;
   }
 
+  TG.buildMarket = function () { build(); };
   TG.register({ id: "market", title: "市场结构训练", icon: "🌡️", desc: "读涨停/跌停/连板/领涨板块，判断情绪周期（启动/发酵/高潮/分歧/退潮）。", render });
   TG.addNav("market");
 })();
